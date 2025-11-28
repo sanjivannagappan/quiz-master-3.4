@@ -1,0 +1,389 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>QuizMaster 3.0 — Quiz</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Segoe UI", Roboto, Arial, sans-serif;
+    background: linear-gradient(180deg,#2b1b6b 0%, #4361ee 60%);
+    display:flex;align-items:center;justify-content:center;color:#fff;
+  }
+
+  .wrap{
+    width:94%;max-width:900px;background:rgba(255,255,255,0.06);
+    border-radius:18px;padding:28px;backdrop-filter: blur(10px);
+    border:1px solid rgba(255,255,255,0.08); box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+  }
+
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+  h1{font-size:22px;margin:0}
+  .level-tag{padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.06);font-weight:700}
+
+  #level-box{display:block}
+  .level-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+  .card{padding:14px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));cursor:pointer;border:1px solid rgba(255,255,255,0.04)}
+  .card:hover{transform:translateY(-6px);transition:all .22s}
+
+  #quiz-box, #result-box{display:none}
+
+  #timer{font-size:20px;color:#ffec7a;font-weight:700;margin-bottom:12px}
+  #question{font-size:20px;margin-bottom:12px}
+  #options{display:grid;gap:10px}
+  .option{background:#fff;color:#111;padding:12px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+  .option:hover{transform:scale(1.02);transition:transform .12s}
+  .correct{background:#27ae60;color:#fff}
+  .wrong{background:#e74c3c;color:#fff}
+  .disabled{opacity:0.75;cursor:default;transform:none}
+
+  #progress{height:10px;background:rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;margin:14px 0}
+  #progress > div{height:100%;background:linear-gradient(90deg,#ffd166,#ff6b6b);width:0%}
+
+  .small{font-size:13px;opacity:0.9}
+
+  .conf{position:fixed;width:10px;height:14px;pointer-events:none;border-radius:2px;z-index:9999}
+  @media (max-width:640px){ .level-grid{grid-template-columns:repeat(1,1fr)} .option{font-size:15px} }
+
+  /* result styling */
+  #result-box h2{margin-top:10px}
+  #leaderboard{margin-top:8px}
+  .lb-item{background:rgba(255,255,255,0.04);padding:8px;border-radius:8px;margin-top:6px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>QuizMaster 3.0</h1>
+    <div class="level-tag" id="levelTag">Select Level</div>
+  </header>
+
+  <main>
+    <section id="level-box">
+      <p class="small">Choose a level to start. Each level has 10 questions. Timer per question: 12s.</p>
+      <div class="level-grid">
+        <div class="card" onclick="startLevel('easy')"><h3>Level 1 — Easy</h3><p class="small">Basics & fundamentals</p></div>
+        <div class="card" onclick="startLevel('hard')"><h3>Level 2 — Hard</h3><p class="small">Intermediate concepts</p></div>
+        <div class="card" onclick="startLevel('veryhard')"><h3>Level 3 — Very Hard</h3><p class="small">Advanced topics</p></div>
+      </div>
+    </section>
+
+    <section id="quiz-box">
+      <div id="timer">Time Left: <span id="timeLeft">12</span>s</div>
+      <div id="progress"><div id="progressFill"></div></div>
+      <div id="question"></div>
+      <div id="options"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="skipQuestion()" style="flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer">Skip</button>
+        <button onclick="endEarly()" style="flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer">End Level</button>
+      </div>
+    </section>
+
+    <section id="result-box">
+      <h2>Level Complete</h2>
+      <p class="small">Score this level:</p>
+      <div style="font-size:40px;font-weight:800;color:#ffd166" id="scoreVal">0</div>
+      <p class="small" id="levelContinueMsg" style="margin-top:8px"></p>
+      <div style="margin-top:14px">
+        <button onclick="playAgain()" style="padding:12px;border-radius:10px;border:none;cursor:pointer">Retry Level</button>
+        <button onclick="gotoNext()" style="padding:12px;border-radius:10px;border:none;cursor:pointer;margin-left:8px">Next</button>
+      </div>
+
+      <div style="margin-top:18px">
+        <h3>Top Scores</h3>
+        <div id="leaderboard"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<audio id="sCorrect" preload="auto">
+  <source src="https://cdn.jsdelivr.net/gh/jakesgordon/javascript-game-development/asteroids/sounds/explode2.wav" type="audio/wav">
+</audio>
+<audio id="sWrong" preload="auto">
+  <source src="https://cdn.jsdelivr.net/gh/jackrugile/jackrugile.github.io@main/sounds/error.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+// --- Quiz Data ---
+const quizData = {
+  easy:[
+    {q:"CPU stands for?", o:["Central Process Unit","Central Processing Unit","Computer Power Unit","Control Program Unit"], a:1},
+    {q:"Device used to type?", o:["Mouse","Keyboard","Monitor","Speaker"], a:1},
+    {q:"Which is an output device?", o:["Keyboard","Scanner","Monitor","Pendrive"], a:2},
+    {q:"The brain of the computer is?", o:["RAM","CPU","Mouse","Monitor"], a:1},
+    {q:"What does RAM store?", o:["Permanent data","Temporary data","Sound","Graphics only"], a:1},
+    {q:"Which one is software?", o:["Mouse","Windows","Keyboard","Printer"], a:1},
+    {q:"Which is an input device?", o:["Monitor","Speaker","Scanner","CPU"], a:2},
+    {q:"Full form of USB?", o:["Universal Service Bus","Universal Serial Bus","United Serial Board","User System Backup"], a:1},
+    {q:"Shortcut for copy?", o:["Ctrl+C","Ctrl+V","Ctrl+X","Ctrl+Z"], a:0},
+    {q:"What is used to browse the internet?", o:["Browser","Folder","File","Paint"], a:0}
+  ],
+  hard:[
+    {q:"Which protocol is used for web pages?", o:["FTP","HTTP","SMTP","POP3"], a:1},
+    {q:"1 Byte = ?", o:["4 bits","2 bits","8 bits","16 bits"], a:2},
+    {q:"Which memory is fastest?", o:["Hard Disk","Cache","RAM","ROM"], a:1},
+    {q:"Ubuntu is a type of?", o:["Application","Browser","Operating System","Programming Language"], a:2},
+    {q:"Binary number of 10?", o:["1010","1001","1111","1100"], a:0},
+    {q:"What does ALU do?", o:["Stores data","Performs calculations","Shows output","Controls memory"], a:1},
+    {q:"Which is NOT a programming language?", o:["Python","Java","C++","HTML"], a:3},
+    {q:"Which company created Windows?", o:["Apple","Microsoft","Google","IBM"], a:1},
+    {q:"What is firewall used for?", o:["Increase speed","Protect network","Shutdown PC","Backup files"], a:1},
+    {q:"LAN stands for?", o:["Local Area Network","Line Access Net","Long Area Node","Local Active Net"], a:0}
+  ],
+  veryhard:[
+    {q:"IPv6 address size?", o:["32-bit","64-bit","128-bit","256-bit"], a:2},
+    {q:"Who invented the computer?", o:["Newton","Charles Babbage","Alan Turing","Edison"], a:1},
+    {q:"SSH uses which port?", o:["21","22","23","80"], a:1},
+    {q:"Which is not an OS?", o:["Unix","Linux","Oracle","Windows"], a:2},
+    {q:"Assembly is what type of language?", o:["Low-level","High-level","Machine","Script"], a:0},
+    {q:"SQL is used for?", o:["Styling pages","Designing apps","Managing databases","Making animation"], a:2},
+    {q:"Which company made first CPU?", o:["AMD","Intel","IBM","Nvidia"], a:1},
+    {q:"Virtual Memory is?", o:["RAM replacement","Fake storage","Using disk as RAM","Cloud storage"], a:2},
+    {q:"Compiler does what?", o:["Store code","Convert code to machine","Debug errors","Run apps"], a:1},
+    {q:"RAID giving both speed & safety?", o:["RAID 0","RAID 1","RAID 5","RAID 6"], a:2}
+  ]
+};
+
+let currentLevel = null;
+let qIndex = 0;
+let correctCount = 0;
+let timer = null;
+let timePerQ = 12;
+let remaining = timePerQ;
+const levelLengths = {
+  easy: quizData.easy.length,
+  hard: quizData.hard.length,
+  veryhard: quizData.veryhard.length
+};
+
+// create shuffled copies so each run is randomized
+let shuffled = {};
+function reshuffleAll(){
+  for(const L in quizData){
+    shuffled[L] = quizData[L].slice().sort(()=>Math.random()-0.5);
+  }
+}
+reshuffleAll();
+
+const levelBox = document.getElementById('level-box');
+const quizBox = document.getElementById('quiz-box');
+const resultBox = document.getElementById('result-box');
+const levelTag = document.getElementById('levelTag');
+const qEl = document.getElementById('question');
+const optsEl = document.getElementById('options');
+const timeLeftEl = document.getElementById('timeLeft');
+const progressFill = document.getElementById('progressFill');
+const scoreVal = document.getElementById('scoreVal');
+const sCorrect = document.getElementById('sCorrect');
+const sWrong = document.getElementById('sWrong');
+const levelContinueMsg = document.getElementById('levelContinueMsg');
+const leaderboardEl = document.getElementById('leaderboard');
+
+// --- Play sound ---
+function playSound(correct){
+  if(correct){
+    sCorrect.currentTime = 0;
+    sCorrect.play();
+  } else {
+    sWrong.currentTime = 0;
+    sWrong.play();
+  }
+}
+
+// helpers
+function levelQuestionCount(level){ return levelLengths[level] || 10; }
+function progressStepFor(level){ return 100 / levelQuestionCount(level); }
+
+function startLevel(level){
+  currentLevel = level;
+  qIndex = 0;
+  correctCount = 0;
+  levelBox.style.display = 'none';
+  quizBox.style.display = 'block';
+  resultBox.style.display = 'none';
+  levelTag.innerText = level.toUpperCase();
+  progressFill.style.width = '0%';
+  shuffled[currentLevel] = quizData[currentLevel].slice().sort(()=>Math.random()-0.5);
+  showQuestion();
+}
+
+function showQuestion(){
+  clearInterval(timer);
+  remaining = timePerQ;
+  timeLeftEl.innerText = remaining;
+  const questions = shuffled[currentLevel];
+  if(!questions || qIndex >= questions.length){
+    showResult();
+    return;
+  }
+  const qobj = questions[qIndex];
+  qEl.innerText = `Q${qIndex+1}. ${qobj.q}`;
+  optsEl.innerHTML = '';
+  qobj.o.forEach((opt,i) => {
+    const b = document.createElement('button');
+    b.className = 'option';
+    b.innerText = opt;
+    b.onclick = ()=> choose(i,b);
+    optsEl.appendChild(b);
+  });
+  const base = (qIndex) * progressStepFor(currentLevel);
+  progressFill.style.width = `${base}%`;
+  startQTimer();
+}
+
+function startQTimer(){
+  clearInterval(timer);
+  remaining = timePerQ;
+  timeLeftEl.innerText = remaining;
+  timer = setInterval(()=>{
+    remaining--;
+    if(remaining < 0) remaining = 0;
+    timeLeftEl.innerText = remaining;
+    const elapsedRatio = (timePerQ - remaining) / timePerQ;
+    const fill = ((qIndex) + elapsedRatio) * progressStepFor(currentLevel);
+    progressFill.style.width = `${Math.min(100,fill)}%`;
+    if(remaining <= 0){
+      clearInterval(timer);
+      handleTimeout();
+    }
+  }, 1000);
+}
+
+function handleTimeout(){
+  const qobj = shuffled[currentLevel][qIndex];
+  markCorrectOption(qobj.a);
+  playSound(false);
+  disableOptions();
+  setTimeout(()=> { nextQuestion(); }, 900);
+}
+
+function choose(selectedIndex, btnEl){
+  clearInterval(timer);
+  const qobj = shuffled[currentLevel][qIndex];
+  const correctIndex = qobj.a;
+  disableOptions();
+  if(selectedIndex === correctIndex){
+    btnEl.classList.add('correct');
+    correctCount++;
+    playSound(true);
+  } else {
+    btnEl.classList.add('wrong');
+    markCorrectOption(correctIndex);
+    playSound(false);
+  }
+  setTimeout(()=> { nextQuestion(); }, 800);
+}
+
+function disableOptions(){
+  const buttons = optsEl.querySelectorAll('button');
+  buttons.forEach(b=>{
+    b.disabled = true;
+    b.classList.add('disabled');
+  });
+}
+
+function markCorrectOption(idx){
+  const buttons = optsEl.querySelectorAll('button');
+  if(buttons[idx]) buttons[idx].classList.add('correct');
+}
+
+function nextQuestion(){
+  qIndex++;
+  if(qIndex < levelQuestionCount(currentLevel)){
+    showQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function skipQuestion(){
+  clearInterval(timer);
+  handleTimeout();
+}
+
+function endEarly(){
+  clearInterval(timer);
+  showResult();
+}
+
+function showResult(){
+  clearInterval(timer);
+  quizBox.style.display = 'none';
+  resultBox.style.display = 'block';
+  scoreVal.innerText = `${correctCount} / ${levelQuestionCount(currentLevel)}`;
+  const pct = Math.round((correctCount / levelQuestionCount(currentLevel)) * 100);
+  let msg = `You scored ${pct}%. `;
+  if(pct >= 80){
+    msg += "Great work! Ready for the next level.";
+  } else if(pct >= 50){
+    msg += "Not bad — try again to improve.";
+  } else {
+    msg += "Consider retrying this level to strengthen fundamentals.";
+  }
+  levelContinueMsg.innerText = msg;
+  saveScoreToLeaderboard(currentLevel, correctCount);
+  renderLeaderboard(currentLevel);
+}
+
+function playAgain(){
+  shuffled[currentLevel] = quizData[currentLevel].slice().sort(()=>Math.random()-0.5);
+  qIndex = 0;
+  correctCount = 0;
+  resultBox.style.display = 'none';
+  quizBox.style.display = 'block';
+  progressFill.style.width = '0%';
+  showQuestion();
+}
+
+function gotoNext(){
+  if(currentLevel === 'easy'){
+    startLevel('hard');
+  } else if(currentLevel === 'hard'){
+    startLevel('veryhard');
+  } else {
+    resultBox.style.display = 'none';
+    levelBox.style.display = 'block';
+    levelTag.innerText = 'Select Level';
+    alert('You completed the last level. Choose a level to play again or retry.');
+  }
+}
+
+function leaderboardKey(level){ return `qm_leaderboard_${level}`; }
+function saveScoreToLeaderboard(level, score){
+  try{
+    const key = leaderboardKey(level);
+    const raw = localStorage.getItem(key);
+    let arr = raw ? JSON.parse(raw) : [];
+    arr.push({score: score, ts: Date.now()});
+    arr.sort((a,b)=> (b.score - a.score) || (b.ts - a.ts));
+    arr = arr.slice(0, 10);
+    localStorage.setItem(key, JSON.stringify(arr));
+  } catch(e){
+    console.warn('Could not save leaderboard', e);
+  }
+}
+
+function renderLeaderboard(level){
+  const key = leaderboardKey(level);
+  const raw = localStorage.getItem(key);
+  let arr = raw ? JSON.parse(raw) : [];
+  leaderboardEl.innerHTML = '';
+  if(arr.length === 0){
+    leaderboardEl.innerHTML = '<div class="small">No scores yet — be the first!</div>';
+    return;
+  }
+  arr.slice(0,5).forEach((entry,i)=>{
+    const d = new Date(entry.ts);
+    const ds = d.toLocaleString();
+    const el = document.createElement('div');
+    el.className = 'lb-item';
+    el.innerText = `${i+1}. ${entry.score} / ${levelQuestionCount(level)} — ${ds}`;
+    leaderboardEl.appendChild(el);
+  });
+}
+</script>
+</body>
+</html>
