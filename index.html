@@ -1,0 +1,305 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>QuizMaster 3.0 — Home</title>
+<link rel="icon" href="WhatsApp Image 2025-11-27 at 21.18.50_f8e7108c.jpg">
+<style>
+  :root{
+    --bg1:#00121a;
+    --bg2:#04132a;
+    --accent:#00ffd6;
+    --accent2:#7c4dff;
+    --glass:rgba(255,255,255,0.06);
+    --glass-2:rgba(255,255,255,0.04);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;font-family:"Segoe UI", Roboto, Arial, sans-serif;background:linear-gradient(120deg,var(--bg1),var(--bg2));color:#fff;overflow:hidden}
+
+  /* Loader (full-screen) */
+  #loader{
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(0,0,0,0.55),rgba(0,0,0,0.7));z-index:9999;
+    transition:opacity .6s ease, transform .6s ease;
+  }
+  #loader.hidden{opacity:0;pointer-events:none;transform:scale(.98)}
+  .loader-card{background:var(--glass);padding:22px;border-radius:14px;text-align:center;backdrop-filter:blur(6px);box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+  .loader-logo{width:84px;height:84px;border-radius:50%;overflow:hidden;margin:0 auto 10px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+  .loader-logo img{width:100%;height:100%;object-fit:cover;display:block}
+  .loader-title{font-size:18px;margin-bottom:6px;font-weight:700}
+  .loader-sub{font-size:13px;opacity:.85}
+
+  /* Main layout */
+  .hero{
+    position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:36px;
+  }
+  /* Particle canvas sits behind */
+  #bgCanvas{position:fixed;inset:0;z-index:0;display:block}
+
+  .card{
+    position:relative;z-index:5;max-width:1100px;width:95%;margin:auto;background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+    border-radius:18px;padding:28px;display:grid;grid-template-columns:360px 1fr;gap:28px;align-items:center;border:1px solid var(--glass-2);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+  }
+
+  /* left column: logo */
+  .brand{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:12px;
+  }
+  .school-logo{width:200px;height:200px;border-radius:18px;overflow:hidden;border:6px solid rgba(255,255,255,0.06)}
+  .school-logo img{width:100%;height:100%;object-fit:contain;display:block;background:#fff;padding:8px}
+  .school-name{font-size:20px;font-weight:800;letter-spacing:0.6px}
+  .school-sub{font-size:13px;opacity:.85}
+
+  /* right column: info & actions */
+  .content{padding:6px 2px}
+  .title{font-size:34px;font-weight:800;line-height:1.02;color:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .subtitle{margin-top:6px;font-size:15px;opacity:0.9}
+  .desc{margin-top:14px;font-size:15px;opacity:0.92;color:rgba(255,255,255,0.92)}
+
+  .controls{margin-top:22px;display:flex;gap:12px;align-items:center}
+  .btn{
+    padding:14px 28px;border-radius:999px;border:none;cursor:pointer;font-weight:800;font-size:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.45);transition:transform .15s ease,box-shadow .15s ease;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));color:#00121a;
+  }
+  .btn:hover{transform:translateY(-6px);box-shadow:0 24px 60px rgba(0,0,0,0.6)}
+  .btn.secondary{
+    background:transparent;border:1px solid rgba(255,255,255,0.08);color:#fff;padding:12px 18px;font-weight:700;
+  }
+
+  /* small controls row */
+  .row{margin-top:14px;display:flex;gap:10px;align-items:center}
+  .mute-toggle{width:44px;height:44px;border-radius:10px;border:none;background:rgba(255,255,255,0.03);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .mute-toggle svg{width:20px;height:20px;opacity:.95}
+
+  .note{font-size:13px;opacity:0.85}
+
+  /* responsiveness */
+  @media (max-width:920px){
+    .card{grid-template-columns:1fr; padding:20px}
+    .school-logo{width:160px;height:160px}
+    .title{font-size:28px}
+  }
+  @media (max-width:520px){
+    .card{padding:16px}
+    .controls{flex-direction:column;align-items:stretch}
+    .btn{width:100%}
+  }
+
+  /* neon glow around start button (subtle) */
+  .glow{
+    position:relative;
+  }
+  .glow:after{
+    content:"";position:absolute;inset:-6px;border-radius:999px;z-index:-1;background:linear-gradient(45deg, rgba(0,255,214,0.12), rgba(124,77,255,0.08));
+    filter:blur(12px);opacity:0.95;
+  }
+
+  /* accessibility focus */
+  button:focus{outline:2px solid rgba(255,255,255,0.12);outline-offset:3px}
+
+</style>
+</head>
+<body>
+
+<!-- Loader (brief, fades) -->
+<div id="loader" role="status" aria-label="Loading">
+  <div class="loader-card">
+    <div class="loader-logo"><img alt="School logo" src="WhatsApp Image 2025-11-27 at 21.18.50_f8e7108c.jpg"></div>
+    <div class="loader-title">QuizMaster 3.0</div>
+    <div class="loader-sub">Preparing your gaming experience…</div>
+  </div>
+</div>
+
+<!-- Particle background canvas -->
+<canvas id="bgCanvas"></canvas>
+
+<!-- Page content -->
+<section class="hero" aria-labelledby="main-heading">
+  <div class="card" role="main">
+    <div class="brand" aria-hidden="false">
+      <div class="school-logo" title="School logo">
+        <!-- using your uploaded image filename; keep the file in same folder -->
+        <img src="WhatsApp Image 2025-11-27 at 21.18.50_f8e7108c.jpg" alt="School Emblem">
+      </div>
+      <div class="school-name">Holy Family Convent Mat. Hr. Sec. School</div>
+      <div class="school-sub">Soar High — Strive Hard, Serve More</div>
+    </div>
+
+    <div class="content">
+      <div id="main-heading" class="title">Level up your knowledge</div>
+      <div class="subtitle">A 3-level quiz challenge: Easy → Hard → Very Hard</div>
+
+      <p class="desc">Welcome to the QuizMaster exhibition build. We added a soft gaming-inspired instrumentals background, neon accents and a particle field for a futuristic look. Click Start to jump into the quiz. Good luck!</p>
+
+      <div class="controls" aria-hidden="false">
+        <button class="btn glow" id="startBtn" onclick="location.href='quiz.html'">
+          ▶ Start Quiz
+        </button>
+
+        <button class="btn secondary" id="rulesBtn" onclick="showRules()">
+          View Rules
+        </button>
+
+        <!-- mute/unmute control -->
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+          <button class="mute-toggle" id="muteBtn" aria-label="Toggle background music">
+            <!-- speaker icon (muted by default) -->
+            <svg id="iconMuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+              <path d="M23 9L17 15"></path>
+              <path d="M17 9L23 15"></path>
+            </svg>
+            <svg id="iconUnmuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+              <path d="M19 5a9 9 0 0 1 0 14"></path>
+            </svg>
+          </button>
+          <div class="note">BG Music</div>
+        </div>
+      </div>
+
+      <div class="row" id="rules" style="display:none;margin-top:16px">
+        <div class="note">• Each level: 10 questions • Time per question: 12s • Skip to move on</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Background audio (gaming instrumental) -->
+<!-- IMPORTANT: Place your gaming instrumental file at assets/gaming.mp3 (relative to this index.html).
+     Example path: ./assets/gaming.mp3
+     If you want me to embed a free-to-use track, tell me and I'll add an online source. -->
+<audio id="bgAudio" loop preload="auto" muted>
+  <source src="assets/gaming.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+<script>
+/* ====== Loader handling ====== */
+const loader = document.getElementById('loader');
+window.addEventListener('load', ()=> {
+  // short delay so animation is visible
+  setTimeout(()=> loader.classList.add('hidden'), 600);
+  // un-hide canvas rendering
+  initParticles();
+  // try to autoplay (muted) so most browsers allow it
+  const audio = document.getElementById('bgAudio');
+  audio.play().catch(()=>{/* autoplay blocked — user can unmute later */});
+});
+
+/* ====== Rules toggle ====== */
+function showRules(){
+  const el = document.getElementById('rules');
+  el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'flex' : 'none';
+}
+
+/* ====== Mute / Unmute toggle ====== */
+const muteBtn = document.getElementById('muteBtn');
+const bgAudio = document.getElementById('bgAudio');
+const iconMuted = document.getElementById('iconMuted');
+const iconUnmuted = document.getElementById('iconUnmuted');
+
+// start muted (so autoplay works); clicking toggles mute and icons
+muteBtn.addEventListener('click', ()=>{
+  if(bgAudio.muted){
+    bgAudio.muted = false;
+    iconMuted.style.display = 'none';
+    iconUnmuted.style.display = 'block';
+    // some browsers require user gesture to start audio
+    bgAudio.play().catch(()=>{ /* couldn't play */ });
+  } else {
+    bgAudio.muted = true;
+    iconMuted.style.display = 'block';
+    iconUnmuted.style.display = 'none';
+  }
+});
+
+/* ====== Simple particle field (canvas) - gaming vibe ====== */
+const canvas = document.getElementById('bgCanvas');
+let ctx, W, H, particles = [], maxP = 80;
+
+function initParticles(){
+  canvas.width = W = window.innerWidth;
+  canvas.height = H = window.innerHeight;
+  ctx = canvas.getContext('2d');
+  particles = [];
+  for(let i=0;i<maxP;i++){
+    particles.push({
+      x: Math.random()*W,
+      y: Math.random()*H,
+      vx: (Math.random()-0.5)*0.6,
+      vy: (Math.random()-0.5)*0.6,
+      r: Math.random()*2.2 + 0.6,
+      hue: 180 + Math.random()*120
+    });
+  }
+  animate();
+}
+
+function animate(){
+  ctx.clearRect(0,0,W,H);
+  // subtle gradient overlay
+  const g = ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0,'rgba(6,10,20,0.12)');
+  g.addColorStop(1,'rgba(2,6,12,0.28)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,W,H);
+
+  // draw particles
+  for(let p of particles){
+    p.x += p.vx; p.y += p.vy;
+    // wrap
+    if(p.x > W+10) p.x = -10;
+    if(p.x < -10) p.x = W+10;
+    if(p.y > H+10) p.y = -10;
+    if(p.y < -10) p.y = H+10;
+
+    // neon glow
+    ctx.beginPath();
+    const hue = p.hue;
+    ctx.fillStyle = `hsla(${hue}, 90%, 60%, 0.9)`;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = `hsla(${hue}, 90%, 60%, 0.55)`;
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // connect close particles (light lines)
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const a = particles[i], b = particles[j];
+      const dx = a.x-b.x, dy = a.y-b.y;
+      const d = Math.sqrt(dx*dx+dy*dy);
+      if(d < 120){
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(130,200,255,${1 - d/120})`;
+        ctx.lineWidth = 0.8;
+        ctx.moveTo(a.x,a.y);
+        ctx.lineTo(b.x,b.y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+window.addEventListener('resize', ()=> {
+  canvas.width = W = window.innerWidth;
+  canvas.height = H = window.innerHeight;
+});
+
+/* ====== Accessibility: allow Enter on Start button ====== */
+const startBtn = document.getElementById('startBtn');
+startBtn.addEventListener('keyup', (e)=>{
+  if(e.key === 'Enter' || e.key === ' ') startBtn.click();
+});
+
+</script>
+</body>
+</html>
